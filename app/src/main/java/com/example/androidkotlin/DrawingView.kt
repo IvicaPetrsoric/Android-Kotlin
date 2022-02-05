@@ -7,6 +7,7 @@ import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
 import java.lang.reflect.Type
+import java.util.*
 
 class DrawingView(context: Context, attrs: AttributeSet): View(context, attrs) {
 
