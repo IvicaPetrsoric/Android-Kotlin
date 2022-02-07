@@ -1,6 +1,7 @@
 package com.example.androidkotlin
 
 
+import android.content.Intent
 import android.media.MediaPlayer
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -10,6 +11,7 @@ import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.View
 import android.widget.Toast
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.androidkotlin.databinding.ActivityExerciseBinding
 import java.util.*
 
@@ -19,9 +21,8 @@ class ExerciseActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     //START
     private var restTimer: CountDownTimer? =
         null // Variable for Rest Timer and later on we will initialize it.
-    private var restProgress =
-        0 // Variable for timer progress. As initial value the rest progress is set to 0. As we are about to start.
-    //END
+    private var restProgress = 0
+    private val restTimerDuration: Long = 1
 
 
     // Adding a variables for the 30 seconds Exercise timer
@@ -29,7 +30,7 @@ class ExerciseActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var exerciseTimer: CountDownTimer? = null // Variable for Exercise Timer and later on we will initialize it.
     private var exerciseProgress = 0 // Variable for the exercise timer progress. As initial value the exercise progress is set to 0. As we are about to start.
     // END
-    private var exerciseTimerDuration:Long = 30
+    private var exerciseTimerDuration:Long = 0
     // The Variable for the exercise list and current position of exercise here it is -1 as the list starting element is 0
     // START
     private var exerciseList: ArrayList<ExerciseModel>? = null // We will initialize the list later.
@@ -38,10 +39,10 @@ class ExerciseActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     // create a binding variable
     private var binding:ActivityExerciseBinding? = null
     private var tts: TextToSpeech? = null // Variable for Text to Speech
-    // TODO (Step 2 - Declaring the variable of the media player for playing a notification sound when the exercise is about to start.)
-    // START
     private var player: MediaPlayer? = null
-    // END
+
+    private var exerciseAdapter: ExerciseStatusAdapter? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 //inflate the layout
@@ -66,6 +67,14 @@ class ExerciseActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         exerciseList = Constants.defaultExerciseList()
         // END
         setupRestView()
+
+        setupExerciseStatusReczclerView()
+    }
+
+    private fun setupExerciseStatusReczclerView() {
+        binding?.rvExerciseStatus?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        exerciseAdapter = ExerciseStatusAdapter(exerciseList!!)
+        binding?.rvExerciseStatus?.adapter = exerciseAdapter
     }
 
 
@@ -138,7 +147,7 @@ class ExerciseActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
          *   {#onTick(long)} callbacks.
          */
         // Here we have started a timer of 10 seconds so the 10000 is milliseconds is 10 seconds and the countdown interval is 1 second so it 1000.
-        restTimer = object : CountDownTimer(10000, 1000) {
+        restTimer = object : CountDownTimer(restTimerDuration * 1000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 restProgress++ // It is increased by 1
                 binding?.progressBar?.progress = 10 - restProgress // Indicates progress bar progress
@@ -149,6 +158,9 @@ class ExerciseActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             override fun onFinish() {
                 // When the 10 seconds will complete this will be executed.
                 currentExercisePosition++
+
+                exerciseList!![currentExercisePosition].setIsSelected(true)
+                exerciseAdapter!!.notifyDataSetChanged()
                 setupExerciseView()
             }
         }.start()
@@ -214,17 +226,21 @@ class ExerciseActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
 
             override fun onFinish() {
+
+
                 // Updating the view after completing the 30 seconds exercise
                 // START
                 if (currentExercisePosition < exerciseList?.size!! - 1) {
+                    exerciseList!![currentExercisePosition].setIsSelected(false)
+                    exerciseList!![currentExercisePosition].setIsCompleted(true)
+                    exerciseAdapter!!.notifyDataSetChanged()
+
                     setupRestView()
                 } else {
 
-                    Toast.makeText(
-                        this@ExerciseActivity,
-                        "Congratulations! You have completed the 7 minutes workout.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    finish()
+                    val intent = Intent(this@ExerciseActivity, FinishActivity::class.java)
+                    startActivity(intent)
                 }
                 // END
             }
